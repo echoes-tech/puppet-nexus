@@ -95,7 +95,7 @@ module Nexus
           c: @options[:classifier],
       }
       param_string = params.reject { |k,v| v.nil? }.collect { |k,v| "#{k}=#{v}" }.join('&')
-      "#{@options[:base_url]}#{@rest_path}#{@redirect_path}?#{param_string}"
+      "#{@options[:base_url]}#{@rest_path}#{@content_path}?#{param_string}"
     end
 
     def log(message)
