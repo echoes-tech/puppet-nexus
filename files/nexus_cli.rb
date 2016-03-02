@@ -117,23 +117,8 @@ OptionParser.new do |opts|
   opts.on('-c', '--classifier CLASS', 'Artifact Classifier') { |c| options[:classifier] = c }
   opts.on('-o', '--output FILE', 'Output file')              { |o| options[:output] = o }
   opts.on('-t', '--temp DIR', 'Temp dir')                    { |t| options[:temp] = t }
-  opts.on('-z', '--newer', 'Newer')                          { |z| options[:z] = z }
   opts.on('-v', '--verbose', 'Verbose')                      { |v| options[:verbose] = v }
 end.parse!
 
-# -z = if nexus has newer version of artifact, remove Output File and exit
-# aka SNAPSHOT_CHECK=1
-
 client = Nexus::Client.new(options)
 client.download_artifact
-
-# if [[ "$SNAPSHOT_CHECK" != "" ]]
-# then
-#   # remove $OUTPUT if nexus has newer version
-#   if [[ -f $OUTPUT ]] && [[ "$(curl -s ${REDIRECT_URL} ${AUTHENTICATION} -I --location-trusted -z $OUTPUT -o /dev/null -w '%{http_code}' )" == "200" ]]
-#   then
-#     echo "Nexus has newer version of $GROUP_ID:$ARTIFACT_ID:$VERSION"
-#     rm $OUTPUT
-#   fi
-#   exit 0
-# fi
