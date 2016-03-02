@@ -6,11 +6,11 @@ require 'net/http'
 module Nexus
 
   class Parser
-
     def self.parse(options)
       abort('No output file provided') unless options[:output]
       parse_gav options
       parse_repository options
+      options
     end
 
     def self.parse_gav(options)
@@ -34,55 +34,38 @@ module Nexus
   end
 
   class Client
-
     def initialize(options)
       @rest_path     = '/service/local'
       @content_path  = '/artifact/maven/content'
       @redirect_path = '/artifact/maven/redirect'
-      @options = options
-      @debug = options[:verbose]
+      @options = Nexus::Parser.parse options
     end
 
     def download_artifact
-      http_call construct_url
-      puts 'File download complete' if @debug
+      url  = create_url
+      args = create_arg_string
+
+      log "Starting download from: #{url}"
+      output = `curl #{args} "#{url}" -o #{@options[:output]} -w '%{http_code}'`
+
+      abort("File download failed: #{output}") if $?.exitstatus != 0
+      log 'File download complete'
     end
 
-    def http_call(url)
-      uri = URI.parse url
-      request = Net::HTTP::Get.new(uri)
-      add_auth request
-
-      puts "Starting download from: #{uri}" if @debug
-      response = Net::HTTP.start(uri.hostname, uri.port, :use_ssl => uri.scheme == 'https') {|http|
-        http.read_timeout = 500
-        http.request request do |response|
-          open @options[:output], 'w' do |io|
-            response.read_body do |chunk|
-              io.write chunk
-            end
-          end
-        end
-      }
-      case response
-        when Net::HTTPSuccess then
-          response
-        when Net::HTTPRedirection then
-          puts 'Redirect:' if @debug
-          http_call response['location']
-        else
-          abort("File download failed: #{response.code}")
+    def create_arg_string
+      args = [ '-R', '--fail', '--location-trusted' ]
+      if @options[:netrc]
+        log 'Authenticating using netrc'
+        args.push '-n'
+      elsif @options[:username] && @options[:password]
+        log "Authenticating as #{@options[:username]}"
+        args.push "-u #{@options[:username]}:#{@options[:password]}"
       end
+      args.push @options[:verbose] ? '-v' : '-sS'
+      args.join(' ')
     end
 
-    def add_auth(request)
-      if @options[:username] && @options[:password]
-        puts "Authenticating as #{@options[:username]}"
-        request.basic_auth @options[:username], @options[:password]
-      end
-    end
-
-    def construct_url
+    def create_url
       params = {
           g: @options[:group],
           a: @options[:artifact],
@@ -94,14 +77,14 @@ module Nexus
       param_string = params.reject { |k,v| v.nil? }.collect { |k,v| "#{k}=#{v}" }.join('&')
       "#{@options[:base_url]}#{@rest_path}#{@redirect_path}?#{param_string}"
     end
+
+    def log(message)
+      puts message if @options[:verbose]
+    end
   end
 end
 
-options = {
-    extension: 'jar',
-    verbose: false,
-}
-
+options = { extension: 'jar', verbose: false, }
 OptionParser.new do |opts|
   opts.banner = 'This script will fetch an artifact from a Nexus server using the Nexus REST service'
   opts.on('-n', '--nexus URL', 'Nexus base url')             { |n| options[:base_url] = n }
@@ -119,8 +102,6 @@ end.parse!
 
 # -z = if nexus has newer version of artifact, remove Output File and exit
 # aka SNAPSHOT_CHECK=1
-
-Nexus::Parser.parse options
 
 client = Nexus::Client.new(options)
 client.download_artifact
