@@ -49,20 +49,12 @@ define nexus::artifact (
     $includeClass = "-c ${classifier}"
   }
 
-  $cmd = "/opt/nexus-script/download-artifact-from-nexus.sh -a ${gav} -e ${packaging} ${$includeClass} -n ${nexus::url} -r ${repository} -o ${output} ${args} -v"
-
-  if (($ensure != absent) and ($gav =~ /-SNAPSHOT/)) {
-    exec { "Checking ${gav}-${classifier}":
-      command => "${cmd} -z",
-      timeout => $timeout,
-      before  => Exec["Download ${name}"],
-    }
-  }
+  $cmd = "/opt/nexus-script/nexus_cli.rb -g ${gav} -e ${packaging} ${$includeClass} -n ${nexus::url} -r ${repository} -o ${output} ${args}"
 
   if $ensure == present {
     exec { "Download ${name}":
       command => $cmd,
-      creates => $output,
+      unless  => "${cmd} -x",
       timeout => $timeout,
     }
   } elsif $ensure == absent {

@@ -33,12 +33,12 @@ class nexus (
   }
 
   # Install script
-  file { '/opt/nexus-script/download-artifact-from-nexus.sh':
+  file { '/opt/nexus-script/nexus_cli.rb':
     ensure  => file,
     owner   => 'root',
     group   => 'root',
     mode    => '0755',
-    source  => 'puppet:///modules/nexus/download-artifact-from-nexus.sh',
+    source  => 'puppet:///modules/nexus/nexus_cli.rb',
     require => File['/opt/nexus-script']
   }
 
