@@ -1,3 +1,10 @@
 .project
 .bundle/
 vendor/
+
+# Gemfile.lock wasn't in repo, so assuming it's ignored
+Gemfile.lock
+
+# IntelliJ
+.idea
+*.iml
