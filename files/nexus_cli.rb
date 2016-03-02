@@ -1,7 +1,8 @@
 #!/usr/bin/env ruby
 
 require 'optparse'
-require 'net/http'
+require 'fileutils'
+require 'digest/sha1'
 
 module Nexus
 
@@ -42,14 +43,33 @@ module Nexus
     end
 
     def download_artifact
-      url  = create_url
-      args = create_arg_string
+      # Explicitly download artifact to a temp file in case of errors
+      # According to curl man page, the --fail option is not fail-safe
+      temp_file = generate_temp_file_path
+      abort('Temp file collision') if File.exist? temp_file # shouldn't happen
+      begin
+        http_download temp_file
+        FileUtils.cp temp_file, @options[:output]
+      ensure
+        log 'Cleaning up temp file'
+        File.delete temp_file if File.exist? temp_file
+      end
+    end
+
+    def http_download(temp_file)
+      url = create_url
 
       log "Starting download from: #{url}"
-      output = `curl #{args} "#{url}" -o #{@options[:output]} -w '%{http_code}'`
+      output = `curl #{create_arg_string} "#{url}" -o #{temp_file} -w '%{http_code}'`
 
       abort("File download failed: #{output}") if $?.exitstatus != 0
       log 'File download complete'
+    end
+
+    def generate_temp_file_path
+      temp_hash = Digest::SHA1.hexdigest("#{Time.now.to_i}-#{rand}")[1, 20]
+      temp_file = "#{@options[:artifact]}-#{@options[:version]}-#{temp_hash}.#{@options[:extension]}"
+      File.join(@options[:temp], temp_file)
     end
 
     def create_arg_string
@@ -84,7 +104,7 @@ module Nexus
   end
 end
 
-options = { extension: 'jar', verbose: false, }
+options = { extension: 'jar', verbose: false, temp: '/tmp'}
 OptionParser.new do |opts|
   opts.banner = 'This script will fetch an artifact from a Nexus server using the Nexus REST service'
   opts.on('-n', '--nexus URL', 'Nexus base url')             { |n| options[:base_url] = n }
@@ -96,6 +116,7 @@ OptionParser.new do |opts|
   opts.on('-e', '--extension EXT', 'Artifact Extension')     { |e| options[:extension] = e }
   opts.on('-c', '--classifier CLASS', 'Artifact Classifier') { |c| options[:classifier] = c }
   opts.on('-o', '--output FILE', 'Output file')              { |o| options[:output] = o }
+  opts.on('-t', '--temp DIR', 'Temp dir')                    { |t| options[:temp] = t }
   opts.on('-z', '--newer', 'Newer')                          { |z| options[:z] = z }
   opts.on('-v', '--verbose', 'Verbose')                      { |v| options[:verbose] = v }
 end.parse!
