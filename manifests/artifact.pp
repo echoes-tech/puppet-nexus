@@ -17,6 +17,7 @@
 #
 # Actions:
 # If ensure is set to 'present' the resource checks the existence of the file and download the artifact if needed.
+# If ensure is set to 'content' the resource ensures that the artifact matches the version in Nexus (based on checksum).
 # If ensure is set to 'absent' the resource deleted the output file.
 # If ensure is not set or set to 'update', the artifact is re-downloaded.
 #
@@ -52,6 +53,12 @@ define nexus::artifact (
   $cmd = "/opt/nexus-script/nexus_cli.rb -g ${gav} -e ${packaging} ${$includeClass} -n ${nexus::url} -r ${repository} -o ${output} ${args}"
 
   if $ensure == present {
+    exec { "Download ${name}":
+      command => $cmd,
+      creates => $output,
+      timeout => $timeout,
+    }
+  } elsif $ensure == content {
     exec { "Download ${name}":
       command => $cmd,
       unless  => "${cmd} -x",
