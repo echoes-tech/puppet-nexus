@@ -42,6 +42,34 @@ module Nexus
       @options = Nexus::Parser.parse options
     end
 
+    def compare_checksum
+      unless File.exist? @options[:output]
+        log 'No file found to compare checksum'
+        exit 1
+      end
+
+      nexus_checksum = http_checksum
+      file_checksum = Digest::SHA1.file(@options[:output]).hexdigest
+
+      if file_checksum == nexus_checksum
+        log 'Checksum of file matches Nexus'
+        exit 0
+      else
+        log 'Checksum of file does not match Nexus'
+        exit 1
+      end
+    end
+
+    def http_checksum
+      @options[:extension] = "#{@options[:extension]}.sha1"
+      url = create_url
+      log "Fetching checksum from: #{url}"
+      checksum = `curl #{create_arg_string} "#{url}"`
+      abort('Checksum download failed') if $?.exitstatus != 0
+      abort('Checksum malformed') unless checksum =~ /^[a-fA-F0-9]{40}$/
+      checksum
+    end
+
     def download_artifact
       # Explicitly download artifact to a temp file in case of errors
       # According to curl man page, the --fail option is not fail-safe
@@ -58,12 +86,9 @@ module Nexus
 
     def http_download(temp_file)
       url = create_url
-
       log "Starting download from: #{url}"
-      output = `curl #{create_arg_string} "#{url}" -o #{temp_file} -w '%{http_code}'`
-
-      abort("File download failed: #{output}") if $?.exitstatus != 0
-      log 'File download complete'
+      `curl #{create_arg_string} "#{url}" -o #{temp_file}`
+      $?.exitstatus == 0 ? log('File download complete') : abort('File download failed')
     end
 
     def generate_temp_file_path
@@ -106,19 +131,32 @@ end
 
 options = { extension: 'jar', verbose: false, temp: '/tmp'}
 OptionParser.new do |opts|
-  opts.banner = 'This script will fetch an artifact from a Nexus server using the Nexus REST service'
-  opts.on('-n', '--nexus URL', 'Nexus base url')             { |n| options[:base_url] = n }
-  opts.on('-u', '--username USER', 'Nexus username')         { |u| options[:username] = u }
-  opts.on('-p', '--password PASS', 'Nexus password')         { |p| options[:password] = p }
-  opts.on('-m', '--netrc', 'Use .netrc')                     { |m| options[:netrc] = m }
-  opts.on('-a', '--gav GAV', 'group:artifact:version')       { |a| options[:gav] = a }
-  opts.on('-r', '--repository REPO', 'Repository')           { |r| options[:repository] = r }
-  opts.on('-e', '--extension EXT', 'Artifact Extension')     { |e| options[:extension] = e }
-  opts.on('-c', '--classifier CLASS', 'Artifact Classifier') { |c| options[:classifier] = c }
-  opts.on('-o', '--output FILE', 'Output file')              { |o| options[:output] = o }
-  opts.on('-t', '--temp DIR', 'Temp dir')                    { |t| options[:temp] = t }
-  opts.on('-v', '--verbose', 'Verbose')                      { |v| options[:verbose] = v }
+  opts.banner = <<EOF
+This script will fetch an artifact from a Nexus server using the Nexus REST service
+
+-x Checksum comparison, artifact will not be downloaded:
+   Checksum of the file on the file system is compared against the checksum in nexus
+   exitcode 0 = match
+   exitcode 1 = mismatch
+
+EOF
+  opts.on('-n URL', 'Nexus base url')               { |n| options[:base_url] = n }
+  opts.on('-u USER', 'Nexus username')              { |u| options[:username] = u }
+  opts.on('-p PASS', 'Nexus password')              { |p| options[:password] = p }
+  opts.on('-m', 'Use .netrc')                       { |m| options[:netrc] = m }
+  opts.on('-g GAV', 'group:artifact:version')       { |a| options[:gav] = a }
+  opts.on('-r REPO', 'Repository')                  { |r| options[:repository] = r }
+  opts.on('-e EXT', 'Artifact Extension')           { |e| options[:extension] = e }
+  opts.on('-c CLASS', 'Artifact Classifier')        { |c| options[:classifier] = c }
+  opts.on('-o FILE', 'Output file')                 { |o| options[:output] = o }
+  opts.on('-t DIR', 'Temp dir')                     { |t| options[:temp] = t }
+  opts.on('-v', 'Verbose')                          { |v| options[:verbose] = v }
+  opts.on('-x', 'Compare file checksum with Nexus') { |x| options[:compare] = x }
 end.parse!
 
 client = Nexus::Client.new(options)
-client.download_artifact
+if options[:compare]
+  client.compare_checksum
+else
+  client.download_artifact
+end
