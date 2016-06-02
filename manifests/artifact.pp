@@ -1,4 +1,4 @@
-# Resource: nexus::artifact
+# Resource: nexus_artifact::artifact
 #
 # This resource downloads Maven Artifacts from Nexus
 #
@@ -25,7 +25,7 @@
 #  class nexus:artifact {
 #}
 #
-define nexus::artifact (
+define nexus_artifact::artifact (
   $gav,
   $repository,
   $output,
@@ -38,10 +38,10 @@ define nexus::artifact (
   $mode       = undef
 ) {
 
-  include nexus
+  include nexus_artifact
 
-  if($nexus::username and $nexus::password) {
-    $args = "-u ${nexus::username} -p '${nexus::password}'"
+  if($nexus_artifact::username and $nexus_artifact::password) {
+    $args = "-u ${nexus_artifact::username} -p ${nexus_artifact::password}"
   } elsif ($nexus::netrc) {
     $args = '-m'
   }
@@ -50,7 +50,7 @@ define nexus::artifact (
     $includeClass = "-c ${classifier}"
   }
 
-  $cmd = "/opt/nexus-script/nexus_cli.rb -g ${gav} -e ${packaging} ${$includeClass} -n ${nexus::url} -r ${repository} -o ${output} ${args}"
+  $cmd = "/opt/nexus-script/nexus_cli.rb -g ${gav} -e ${packaging} ${$includeClass} -n ${nexus_artifact::url} -r ${repository} -o ${output} ${args}"
 
   if $ensure == present {
     exec { "Download ${name}":

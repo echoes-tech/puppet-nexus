@@ -1,4 +1,4 @@
-# Class: nexus
+# Class: nexus_artifact
 #
 # This module downloads Maven Artifacts from Nexus
 #
@@ -18,7 +18,7 @@
 #   password => password
 #}
 #
-class nexus (
+class nexus_artifact (
   $url,
   $username = undef,
   $password = undef,
@@ -38,7 +38,7 @@ class nexus (
     owner   => 'root',
     group   => 'root',
     mode    => '0755',
-    source  => 'puppet:///modules/nexus/nexus_cli.rb',
+    source  => 'puppet:///modules/nexus_artifact/nexus_cli.rb',
     require => File['/opt/nexus-script']
   }
 

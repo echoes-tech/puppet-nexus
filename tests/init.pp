@@ -1,1 +1,1 @@
-include nexus
+include nexus_artifact
