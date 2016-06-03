@@ -17,21 +17,23 @@ Getting the module
 
 Usage
 -----
-        # `ensure` options
 
-        ## present
-        Downloads the file if it is not present
+# "ensure" options
 
-        ## absent
-        Removes the file
+## present
+Downloads the file if it is not present
 
-        ## update
-        Downloads the file if the checksum on nexus has changed
+## absent
+Removes the file
 
-        ## everything else
-        Downloads the file whatever happens
+## update
+Downloads the file if the checksum on nexus has changed
+
+## everything else
+Downloads the file whatever happens
 	
-	# Initialize Nexus
+# Initialize Nexus
+
 	class {'nexus':
 		url => "http://edge.spree.de/nexus",
 		username => "nexus",
