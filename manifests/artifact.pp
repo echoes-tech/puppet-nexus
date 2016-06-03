@@ -31,8 +31,8 @@ define nexus_artifact::artifact (
   $output,
   $packaging  = 'jar',
   $classifier = undef,
-  $ensure     = update,
-  $timeout    = undef,
+  $ensure     = $nexus::ensure,
+  $timeout    = 300,
   $owner      = undef,
   $group      = undef,
   $mode       = undef

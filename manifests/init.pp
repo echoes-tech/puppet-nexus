@@ -19,6 +19,7 @@
 #}
 #
 class nexus_artifact (
+  $ensure = update,
   $url,
   $username = undef,
   $password = undef,

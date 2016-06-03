@@ -17,6 +17,19 @@ Getting the module
 
 Usage
 -----
+        # `ensure` options
+
+        ## present
+        Downloads the file if it is not present
+
+        ## absent
+        Removes the file
+
+        ## update
+        Downloads the file if the checksum on nexus has changed
+
+        ## everything else
+        Downloads the file whatever happens
 	
 	# Initialize Nexus
 	class {'nexus':
