@@ -29,7 +29,7 @@ define nexus_artifact::artifact (
   $gav,
   $repository,
   $output,
-  $packaging  = 'jar',
+  $packaging  = $nexus_artifact::packaging,
   $classifier = undef,
   $ensure     = $nexus_artifact::ensure,
   $timeout    = 300,

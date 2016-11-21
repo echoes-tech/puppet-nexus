@@ -24,6 +24,7 @@ class nexus_artifact (
   $username = undef,
   $password = undef,
   $netrc = undef,
+  $packaging = 'jar'
 ) {
 
   # Check arguments
