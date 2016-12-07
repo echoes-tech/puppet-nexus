@@ -1,7 +1,7 @@
 {
   "author": "Clement Escoffier, akquinet tech@spree gmbh",
   "license": "Apache Software License 2.0",
-  "name": "echoes-nexus-artifact",
+  "name": "echoes-nexus_artifact",
   "summary": "Download Artifacts from Nexus",
   "version": "0.0.1",
   "project_page": "https://github.com/echoes-tech/puppet-nexus",
